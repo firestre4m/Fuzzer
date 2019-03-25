@@ -47,8 +47,8 @@ class APPFuzzer(TCPSession):
 
 if __name__ == '__main__':
 	src_ip = "10.0.2.15"
-	# dst_ip = "192.168.0.26"
-	dst_ip = "129.236.238.135"
+	dst_ip = "192.168.0.26"
+	# dst_ip = "129.236.238.135"
 	dport = 9998
 	sport = 7890
 	print("[*]Begin APPFuzzer, presss CTRL-C to terminate")

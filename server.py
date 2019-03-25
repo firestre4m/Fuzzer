@@ -55,7 +55,7 @@ class Server(TCPServer):
 
 if __name__ == '__main__':
     # serv = TCPServer(('', 9999), EchoHandler)
-    serv = Server(('', 9998), EchoHandler)
+    serv = Server(('', 9999), EchoHandler)
     TCPServer.allow_resuse_address = True
     serv.allow_resuse_address = True
     try:

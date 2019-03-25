@@ -45,26 +45,36 @@ class IPFuzzer(TCPSession):
 			if not ans:
 				print("[-]no response value for field ({field}): {val}".format(field = field, val = str(val)))
 				return
-			if ans and ans[TCP].flags == 'R':
+			if ans and ans.haslayer(TCP) and ans[TCP].flags == 'R':
 				print("[+]VALID value for field ({field}): {val}".format(field = field, val = str(val)))
 
 
 
-	def default_run(self):
+	def default_run(self, target_field = None):
 		print("default fuzzing for IP layer")
 		
 		self.build_defaultset()
-		# for _ in range(10):
-		# 	self.send(IP(dst = self.dst), 'version', 4)
-		for field, values in self.defaultset.items():
-			for val in values:
+		if target_field is None:
+			for field, values in self.defaultset.items():
+				for val in values:
+					packet = IP(dst = self.dst)
+					packet.setfieldval(field, val)
+					self.send(packet, field, val)
+					try:
+						sleep(0.1)
+					except KeyboardInterrupt:
+						print("[*]Terminated!")
+						sys.exit(0)
+		else:
+			for val in self.defaultset.get(target_field):
 				packet = IP(dst = self.dst)
-				# packet.field = val
-				packet.setfieldval(field, val)
-				# self.connect()
-				self.send(packet, field, val)
-				sleep(0.1)
-				# self.close()
+				packet.setfieldval(target_field, val)
+				self.send(packet, target_field, val)
+				try:
+					sleep(0.1)
+				except KeyboardInterrupt:
+					print("[*]Terminated!")
+					sys.exit(0)
 
 
 
@@ -99,6 +109,21 @@ class IPFuzzer(TCPSession):
 			self.defaultset['proto'].append(pro)
 			# self.defaultset['proto'].append(IP(proto = pro))
 
+	def check_field_val(self, field, val):
+		pass
+
+	def parse_file(self, filename):
+		lines = self.file_read_in(filename)
+		if not lines:
+			print("empty tests")
+			return
+		for line in lines:
+			onetest = line.split()
+			for fv in onetest:
+				field = fv.split(":")[0]
+				val = int(fv.split(":")[1])
+				if check_field_val(field, val):
+					pass
 
 
 
@@ -106,8 +131,8 @@ class IPFuzzer(TCPSession):
 if __name__ == "__main__":
 	src_ip = "10.0.2.15"
 	# dst_ip = "52.14.181.116"
-	# dst_ip = "192.168.0.26"
-	dst_ip = "129.236.238.135"
+	dst_ip = "192.168.0.26"
+	# dst_ip = "129.236.238.135"
 	# dport = 80
 	dport = 9998
 	sport = 7890

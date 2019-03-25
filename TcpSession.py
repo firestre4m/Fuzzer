@@ -62,7 +62,7 @@ class TCPSession:
         # self.seq += 1
         # print("[OJBK] Send FINACK to Server!")
         
-        FINACK=sr1(FIN, timeout = 2, verbose = 0)
+        FINACK=sr1(FIN, timeout = 1, verbose = 0)
         self.seq += 1
         if not FINACK:
             print("fail to receive FINACK")
@@ -79,7 +79,11 @@ class TCPSession:
         #     return False
         from time import sleep
         sleep(1)
-
+        # try:
+        #     sleep(1)
+        # except KeyboardInterrupt:
+        #     print("[*]Terminated")
+        # finally:
         self.ack = FINACK[TCP].seq + 1
         # self.seq = FINACK[TCP].ack
         LASTACK=self.ip/TCP(sport=self.sport, dport=self.dport, flags="A", seq=self.seq, ack=self.ack)
@@ -178,10 +182,18 @@ class TCPSession:
             sys.exit(0)
 
 
-    # def sniffer_func(packet):
-    #     if packet[TCP].flags=='P':
-    #         ACK = TCP(sport=self.sport, dport=self.dport, flags='A', seq=self.seq, ack=ack)
-    #         send(self.ip/ACK)
+    def file_read_in(self, filename):
+        try:
+            with open(filename, 'r') as file:
+                tests = file.readlines()
+        except:
+            print("[-] ERROR: read test file fails!")
+        else:
+            return tests
+
+
+
+
 
 
 if __name__ == "__main__":
