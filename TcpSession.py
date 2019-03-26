@@ -192,7 +192,20 @@ class TCPSession:
             return tests
 
 
-
+    def read_payload(self, filename):
+        try:
+            with open(filename, 'r') as file:
+                line = file.readlines()
+                if len(line) > 1:
+                    print("Please write payload in one line")
+                    sys.exit(0)
+                line = line[0].strip().replace(' ', '')
+                self.payload = bytes.fromhex(line)
+        except Exception as e:
+            print("[-]ERROR", end = ' ')
+            print(e)
+            print("fail to read payload, check filename or content in the file")
+            sys.exit(0)
 
 
 

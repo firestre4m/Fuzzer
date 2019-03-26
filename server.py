@@ -34,7 +34,8 @@ class EchoHandler(BaseRequestHandler):
 
 
 	def validate(self, msg):
-		self.pattern_head = b'^aaaa.*'
+		# self.pattern_head = b'^aaaa.*'
+		self.pattern_head = b'^' + self.server.pattern + b'.*'
 		self.pattern = re.compile(self.pattern_head)
 		res = re.match(self.pattern, msg)
 		if res is not None:
@@ -42,20 +43,36 @@ class EchoHandler(BaseRequestHandler):
 		else:
 			return False
 
+
+
 class Server(TCPServer):
 	def __init__(self, target, handler):
 		TCPServer.__init__(self, target, handler)
 		self.valid_count = 0
 		self.invalid_count = 0
+		self.read_pattern("server_pattern.txt")
 
-
+	def read_pattern(self, filename):
+		try:
+			with open(filename, 'r') as file:
+				line = file.readlines()
+				if len(line) > 1:
+					print("Please write pattern in one line")
+					sys.exit(0)
+				line = line[0].strip().replace(' ', '')
+				self.pattern = bytes.fromhex(line)
+		except Exception as e:
+			print("[-]ERROR", end = ' ')
+			print(e)
+			print("fail to read pattern, check filename or content in the file")
+			sys.exit(0)
 
 
 
 
 if __name__ == '__main__':
     # serv = TCPServer(('', 9999), EchoHandler)
-    serv = Server(('', 9999), EchoHandler)
+    serv = Server(('', 9998), EchoHandler)
     TCPServer.allow_resuse_address = True
     serv.allow_resuse_address = True
     try:

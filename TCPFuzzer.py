@@ -7,8 +7,10 @@ import sys
 class TCPFuzzer(TCPSession):
 	def __init__(self, src, dst, sport, dport):
 		TCPSession.__init__(self, src, dst, sport, dport)
-		self.payload = "hello world"
+		# self.payload = "hello world"
 		self.defaultset = defaultdict(list)
+		self.file_set = list()
+		self.read_payload('default_payload.txt')
 
 	def build_default(self):
 		# self.defaultset['seq'].append(self.seq)
@@ -44,8 +46,8 @@ class TCPFuzzer(TCPSession):
 					tcp.seq = self.seq
 					tcp.ack = self.ack
 					tcp.setfieldval(field, val)
-					payload = b'aaa'
-					packet = ip/tcp/Raw(load = payload)
+					# payload = b'aaa'
+					packet = ip/tcp/Raw(load = self.payload)
 					# print(packet[TCP].ack) 
 					self.send(packet, field, val)
 		else:
@@ -55,13 +57,13 @@ class TCPFuzzer(TCPSession):
 				tcp.seq = self.seq
 				tcp.ack = self.ack
 				tcp.setfieldval(target_field, val)
-				payload = b'aaa'
-				packet = ip/tcp/Raw(load = payload)
+				# payload = b'aaa'
+				packet = ip/tcp/Raw(load = self.payload)
 				# print(packet[TCP].ack) 
 				self.send(packet, target_field, val)
 
 
-	def send(self, packet, field, val):
+	def send(self, packet, field = '{Multi fields}', val = '{multi values}'):
 		# self.connect()
 		if not self.connected:
 			print("[-]TCP connect fail")
@@ -89,6 +91,52 @@ class TCPFuzzer(TCPSession):
 			else:
 				# self.seq += len(packet[Raw])
 				self.close()
+
+	def build_tests_from_file(self, filename):
+		tests = self.file_read_in(filename)
+		if not tests:
+			print("fail to read tests from file")
+			sys.exit(0)
+		for line in tests:
+			try:
+				one_entry = line.strip().replace(' ', '').split(',')
+				one_test = list()
+				for fv in one_entry:
+					field = fv.split(':')[0]
+					val_s = fv.split(':')[1]
+					val = int(val_s, 16)
+					# print(field + ":", end = ' ')
+					# print(val)
+					one_test.append((field, val))
+				self.file_set.append(one_test)
+			except ValueError as e:
+				# print("Some values are wrong in the file")
+				print('[-]ERROR:', end = ' ')
+				print(e)
+				print('Please check your file')
+				sys.exit(-1)
+			except:
+				print("Please follow the format requirement, see sample file")
+				sys.exit(-1)
+
+	def run_from_file(self,filename):
+		self.build_tests_from_file(filename)
+		# for t in self.file_set:
+		# 	print(t)
+		ip = IP(dst = self.dst)
+		for test in self.file_set:
+			tcp = TCP(sport = self.sport, dport = self.dport,flags = "PA", seq = self.seq, ack = self.ack)
+			self.connect()
+			tcp.seq = self.seq
+			tcp.ack = self.ack
+			for fv in test:
+				field = fv[0]
+				val = fv[1]
+				tcp.setfieldval(field, val)
+			# payload = b'aaa'
+			packet = ip/tcp/Raw(load = self.payload)
+			self.send(packet)
+
 
 if __name__ == '__main__':
 	src_ip = "10.0.2.15"

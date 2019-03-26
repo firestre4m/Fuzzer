@@ -9,6 +9,7 @@ class APPFuzzer(TCPSession):
 		TCPSession.__init__(self, src, dst, sport, dport)
 		# self.defaultset = defaultdict(list)
 		self.defaultset = list()
+		self.file_set = list()
 		self.valid = 0
 		self.invalid = 0
 
@@ -42,6 +43,8 @@ class APPFuzzer(TCPSession):
 		self.connect()
 		for p in self.defaultset:
 			sleep(0.5)
+			print("[+] Sending payload:", end = ' ')
+			print(p)
 			self.send(p)
 			# print(ans)
 		self.close()
@@ -56,8 +59,35 @@ class APPFuzzer(TCPSession):
 			self.invalid += 1
 		ack = self.ip/TCP(sport=self.sport, dport=self.dport, flags='A', seq=self.seq, ack=self.ack)
 		send(ack, verbose = 0)
-		
+	
+	def build_tests_from_file(self, filename):
+		tests = self.file_read_in(filename)
+		if not tests:
+			print("fail to read tests from file")
+			sys.exit(0)
+		for line in tests:
+			line = line.strip().replace(' ', '')
+			if not line: continue
+			if len(line) > 2000:
+				print("payload is too long: {p}".format(p = line))
+				sys.exit(-1)
+			try:
+				byte_seq = bytes.fromhex(line)
+			except:
+				print("wrong format in the file")
+				sys.exit(0)
+			else:
+				self.file_set.append(byte_seq)
 
+	def run_from_file(self, filename):
+		self.build_tests_from_file(filename)
+		self.connect()
+		for p in self.file_set:
+			sleep(0.5)
+			print("[+] Sending payload:", end = ' ')
+			print(p)
+			self.send(p)
+		self.close()
 
 
 if __name__ == '__main__':

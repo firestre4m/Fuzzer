@@ -8,7 +8,9 @@ class IPFuzzer(TCPSession):
 	def __init__(self,src, dst, sport, dport):
 		TCPSession.__init__(self, src, dst, sport, dport)
 		self.defaultset = defaultdict(list)
-		self.payload = "hello world"
+		# self.payload = "hello world"
+		self.file_set = list()
+		self.read_payload('default_payload.txt')
 
 	# def send(self, IPpacket, field, val):
 	# 	payload = self.payload + " " + field + " " + str(val)
@@ -33,12 +35,13 @@ class IPFuzzer(TCPSession):
 	# 		if ack[TCP].ack != self.seq:
 	# 			print('INVALID ACK value' + str(ack[TCP].ack))
 
-	def send(self, IPpacket, field, val):
-		payload = self.payload + " " + field + " " + str(val)
-		packet = IPpacket/TCP(sport = self.sport, dport = self.dport, flags = "A")
+	def send(self, IPpacket, field = '{multi field}', val = '{mulit values}'):
+		# payload = self.payload + " " + field + " " + str(val)
+		packet = IPpacket/TCP(sport = self.sport, dport = self.dport, flags = "A")/self.payload
 		try:
 			ans = sr1(packet, timeout = 0.5, verbose = 0)
-		except:
+		except Exception as e:
+			print(e)
 			print("[-]INVALID value for field ({field}): {val}".format(field = field, val = str(val)))
 			return 
 		else:
@@ -112,18 +115,47 @@ class IPFuzzer(TCPSession):
 	def check_field_val(self, field, val):
 		pass
 
-	def parse_file(self, filename):
-		lines = self.file_read_in(filename)
-		if not lines:
-			print("empty tests")
-			return
-		for line in lines:
-			onetest = line.split()
-			for fv in onetest:
-				field = fv.split(":")[0]
-				val = int(fv.split(":")[1])
-				if check_field_val(field, val):
-					pass
+	def build_tests_from_file(self, filename):
+		tests = self.file_read_in(filename)
+		if not tests:
+			print("fail to read tests from file")
+			sys.exit(0)
+		for line in tests:
+			try:
+				one_entry = line.strip().replace(' ', '').split(',')
+				one_test = list()
+				for fv in one_entry:
+					field = fv.split(':')[0]
+					val_s = fv.split(':')[1]
+					val = int(val_s, 16)
+					# print(field + ":", end = ' ')
+					# print(val)
+					one_test.append((field, val))
+				self.file_set.append(one_test)
+			except ValueError as e:
+				# print("Some values are wrong in the file")
+				print('[-]ERROR:', end = ' ')
+				print(e)
+				print('Please check your file')
+				sys.exit(-1)
+			except:
+				print("Please follow the format requirement, see sample file")
+				sys.exit(-1)
+
+	def run_from_file(self, filename):
+		self.build_tests_from_file(filename)
+
+		for test in self.file_set:
+			packet = IP(dst = self.dst)
+			for fv in test:
+				packet.setfieldval(fv[0], fv[1])
+			self.send(packet)
+			print("packet sent")
+			# try:
+			sleep(0.2)
+			# except KeyboardInterrupt:
+			# 	print("[*]Terminated!")
+			# 	sys.exit(0)
 
 
 

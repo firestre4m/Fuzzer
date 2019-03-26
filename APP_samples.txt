@@ -1,0 +1,6 @@
+aa AA AA BB BB CC CC 
+AA CC FF
+AA BB CC
+AA AA AA AA AA 
+ 
+BB CCDD

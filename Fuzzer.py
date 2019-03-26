@@ -54,7 +54,7 @@ def get_size(size_str):
 def run(args):
 	src_ip = "10.0.2.15"
 	dst_ip = "192.168.0.26"
-	dport = 9999
+	dport = 9998
 	sport = 7890
 
 	if args.layer == "IP":
@@ -64,12 +64,22 @@ def run(args):
 				fuzzer = IPFuzzer(src_ip, dst_ip, sport, dport)
 				fuzzer.default_run(target_field = args.field)
 			except KeyboardInterrupt:
-				fuzzer.close()
-				sleep(0.2)
+				# fuzzer.close()
+				# sleep(0.2)
 				print("[*]Terminated!")
 				sys.exit(0)
 		else:
 			print("IP run from file")
+			try:
+				fuzzer = IPFuzzer(src_ip, dst_ip, sport, dport)
+				# fuzzer.default_run(target_field = args.field)
+				fuzzer.run_from_file(args.file)
+
+			except KeyboardInterrupt:
+				# fuzzer.close()
+				# sleep(0.2)
+				print("[*]Terminated!")
+				sys.exit(0)
 
 	elif args.layer == 'TCP':
 		if not args.file:
@@ -84,6 +94,16 @@ def run(args):
 				sys.exit(0)
 		else:
 			print("TCP run from file")
+			try:
+				fuzzer = TCPFuzzer(src_ip, dst_ip, sport, dport)
+				# fuzzer.default_run(target_field = args.field)
+				fuzzer.run_from_file(args.file)
+
+			except KeyboardInterrupt:
+				fuzzer.close()
+				sleep(0.2)
+				print("[*]Terminated!")
+				sys.exit(0)
 	else:
 		if not args.file:
 			print("APP default run")
@@ -99,6 +119,15 @@ def run(args):
 				sys.exit(0)
 		else:
 			print("APP run from file")
+			try:
+				fuzzer = APPFuzzer(src_ip, dst_ip, sport, dport)
+				fuzzer.run_from_file(args.file)
+				print("[+]Finished, {valid} valid, {invalid} invalid".format(valid = fuzzer.valid, invalid = fuzzer.invalid))
+			except KeyboardInterrupt:
+				fuzzer.close()
+				sleep(0.2)
+				print("[*]Terminated!")
+				sys.exit(0)
 
 
 

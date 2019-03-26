@@ -1,0 +1,8 @@
+seq:02, ack:ff, flags:ff, window:fefe, urgptr:fefe, dataofs:F, reserved:F, seq:3
+seq:02, ack:ff, flags:ee, window:fefe
+seq:02, ack:ff, flags:ee, window:fefe, urgptr:fefe, dataofs:F, reserved:F
+urgptr:fefe, dataofs:F, reserved:F
+seq:02, ack:ff, flags:ee, window:fefe, urgptr:fefe, dataofs:F, reserved:F
+seq:02, ack:ff, dataofs:F, reserved:F
+seq:02, ack:ff, flags:ee, window:fefe, urgptr:fefe, dataofs:F, reserved:F
+dataofs:F, reserved:Ff
