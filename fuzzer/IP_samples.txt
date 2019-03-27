@@ -1,4 +1,4 @@
-version:04, ihl:05, tos:ff, len:ff, id:ff, flags:e, frag:f, ttl:fe, proto:fe
+version:04,  ihl:05, tos:ff, len:ff, id:ff, flags:e, frag:f, ttl:fe, proto:fe
 version:04, ihl:05, tos:ff, len:ff, id:ff, flags:e, frag:f, ttl:fe, proto:fe
 version:04, ihl:05, tos:ff, len:ff, id:ff, flags:e, frag:f, ttl:fe, proto:fe
 version:04, ihl:05, tos:ff, len:ff, id:ff, flags:e, frag:f, ttl:fe, proto:fe

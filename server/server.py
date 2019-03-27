@@ -1,12 +1,17 @@
 from socketserver import BaseRequestHandler, TCPServer
-import signal
 import sys
 import re
+import argparse
 
+#handler class 
 class EchoHandler(BaseRequestHandler):
 
+	#this function will be called when a new connection come in
+	#check the received payload, reponse with 0x00 if payload match pattern, 
+	#else respons with 0xff
+	#In the mean time, maintain the valid and invalid counts for every sigle connection
 	def handle(self):
-		print('Got connection from', self.client_address)
+		print('Got new connection from', self.client_address)
 		self.server.valid_count = 0
 		self.server.invalid_count = 0
 		while True:
@@ -32,9 +37,8 @@ class EchoHandler(BaseRequestHandler):
 				print(self.server.invalid_count)
 				self.request.send(b'\xff')
 
-
+	#helper function to valid the payload
 	def validate(self, msg):
-		# self.pattern_head = b'^aaaa.*'
 		self.pattern_head = b'^' + self.server.pattern + b'.*'
 		self.pattern = re.compile(self.pattern_head)
 		res = re.match(self.pattern, msg)
@@ -50,8 +54,10 @@ class Server(TCPServer):
 		TCPServer.__init__(self, target, handler)
 		self.valid_count = 0
 		self.invalid_count = 0
-		self.read_pattern("server_pattern.txt")
+		self.read_pattern("server_pattern.txt") # read the user-defined pattern from file
 
+	#read pattern from file
+	#the pattern should be 1 line and less than 1000 bytes
 	def read_pattern(self, filename):
 		try:
 			with open(filename, 'r') as file:
@@ -60,6 +66,9 @@ class Server(TCPServer):
 					print("Please write pattern in one line")
 					sys.exit(0)
 				line = line[0].strip().replace(' ', '')
+				if len(line) > 2000:
+					print("Pattern lengh might be too long!")
+					sys.exit(0)
 				self.pattern = bytes.fromhex(line)
 		except Exception as e:
 			print("[-]ERROR", end = ' ')
@@ -67,17 +76,32 @@ class Server(TCPServer):
 			print("fail to read pattern, check filename or content in the file")
 			sys.exit(0)
 
-
+#helper function to validate the port
+def check_port(port):
+	if port < 1 or port > 65535:
+		print("[-]ERROR:invalid port number")
+		return False
+	else:
+		return True
 
 
 if __name__ == '__main__':
-    # serv = TCPServer(('', 9999), EchoHandler)
-    serv = Server(('', 9998), EchoHandler)
-    TCPServer.allow_resuse_address = True
-    serv.allow_resuse_address = True
-    try:
-    	serv.serve_forever()
-    except KeyboardInterrupt:
-    	print("You pressed CTRL-C")
-    	print("Aborted! So far {valid} valid, {invalid} invalid ".format(valid=str(serv.valid_count), invalid = str(serv.invalid_count)))
-    	sys.exit(0)
+	parser = argparse.ArgumentParser(prog = "server", usage = 'python3 server.py -p [port]')
+	parser.add_argument('-p', '--port', dest = 'port', type = int, required = True, help = 'port to listen')
+	args = parser.parse_args()
+
+	if not check_port(args.port):
+		sys.exit(-1)
+	try:
+		serv = Server(('', args.port), EchoHandler)
+		print("[*]The server is running, press CTRL-C to stop")
+	except OSError:
+		print("[-]ERROR: port is being used, try another port")
+		sys.exit(-1)
+
+	try:
+		serv.serve_forever()
+	except KeyboardInterrupt:
+		print("You pressed CTRL-C")
+		print("Aborted! So far {valid} valid, {invalid} invalid ".format(valid=str(serv.valid_count), invalid = str(serv.invalid_count)))
+		sys.exit(0)

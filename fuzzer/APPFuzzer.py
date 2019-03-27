@@ -4,39 +4,40 @@ from scapy.all import *
 from time import sleep
 import sys
 
+#class for APP fuzzing
 class APPFuzzer(TCPSession):
 	def __init__(self, src, dst, sport, dport):
 		TCPSession.__init__(self, src, dst, sport, dport)
-		# self.defaultset = defaultdict(list)
 		self.defaultset = list()
 		self.file_set = list()
 		self.valid = 0
 		self.invalid = 0
 
-
+	#build default test set
+	#the number of tests can be specified by user
+	#size can be a int, it means the payload size is fixed
+	#size can be a tuple, means the range of the payload size
+	#each byte in payload will be generated randomly
 	def build_default(self, number, size):
-		
+		#fixed size paylaod
 		if isinstance(size, int):
 			for i in range(number):
 				payload = b''
 				for j in range(size):
 					payload += bytes([random.randint(0, 255)])
-				# payload = 'a'*size
-				# payload = bytes(payload, encoding = 'utf-8')
 				self.defaultset.append(payload)
-
+		#variable size payload
 		elif isinstance(size, tuple):
 			for i in range(number):
 				payload = b''
 				s = random.randint(size[0],size[1])
 				for j in range(s):
 					payload += bytes([random.randint(0, 255)])
-				# payload = "\x00"* random.randint(0,9) + "\x33"
-				# payload = 'a'*random.randint(size[0],size[1])
-				# payload = bytes(payload, encoding = 'utf-8')
 				self.defaultset.append(payload)
 
-
+	#fuzzing using default set
+	#establish a session before sending payload
+	#finally close the session correctly
 	def default_run(self, number, size):
 		self.build_default(number, size)
 
@@ -46,9 +47,11 @@ class APPFuzzer(TCPSession):
 			print("[+] Sending payload:", end = ' ')
 			print(p)
 			self.send(p)
-			# print(ans)
 		self.close()
 
+	#overwrite ack func in TCPSession class
+	#process server's response 0x00 or 0xff to update counts
+	#send ack to server
 	def _ack(self, p):
 		self.ack = p[TCP].seq + len(p[Raw].load)
 		self.seq = p[TCP].ack
@@ -60,6 +63,7 @@ class APPFuzzer(TCPSession):
 		ack = self.ip/TCP(sport=self.sport, dport=self.dport, flags='A', seq=self.seq, ack=self.ack)
 		send(ack, verbose = 0)
 	
+	#generate test set from file
 	def build_tests_from_file(self, filename):
 		tests = self.file_read_in(filename)
 		if not tests:
@@ -68,17 +72,18 @@ class APPFuzzer(TCPSession):
 		for line in tests:
 			line = line.strip().replace(' ', '')
 			if not line: continue
-			if len(line) > 2000:
-				print("payload is too long: {p}".format(p = line))
+			if len(line) > 2000: #len of payload shouldn't be larger than 1000 bytes
+				print("[-]Payload is too long: {p}".format(p = line))
 				sys.exit(-1)
 			try:
 				byte_seq = bytes.fromhex(line)
 			except:
-				print("wrong format in the file")
+				print("[-]ERROR: wrong format in the file")
 				sys.exit(0)
 			else:
 				self.file_set.append(byte_seq)
 
+	#fuzz using payload from file
 	def run_from_file(self, filename):
 		self.build_tests_from_file(filename)
 		self.connect()
@@ -89,22 +94,5 @@ class APPFuzzer(TCPSession):
 			self.send(p)
 		self.close()
 
-
-if __name__ == '__main__':
-	src_ip = "10.0.2.15"
-	dst_ip = "192.168.0.26"
-	# dst_ip = "129.236.238.135"
-	dport = 9999
-	sport = 7890
-	print("[*]Begin APPFuzzer, presss CTRL-C to terminate")
-	try:
-		fuzzer = APPFuzzer(src_ip, dst_ip, sport, dport)
-		fuzzer.default_run(10, 5)
-		print("[+]Finished, {valid} valid, {invalid} invalid".format(valid = fuzzer.valid, invalid = fuzzer.invalid))
-	except KeyboardInterrupt:
-		fuzzer.close()
-		sleep(0.5)
-		print("[*]Terminated!")
-		sys.exit(0)
 
 
